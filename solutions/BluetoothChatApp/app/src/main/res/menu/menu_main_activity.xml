@@ -1,20 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<menu xmlns:tools="http://schemas.android.com/tools"
-    xmlns:android="http://schemas.android.com/apk/res/android"
+<!-- Menu for MainActivity -->
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <item
-        android:id="@+id/menu_search_devices"
-        android:icon="@drawable/ic_person_add"
-        android:iconTint="@color/white"
-        android:title="@string/str_menu_search_devices"
-        app:showAsAction="withText"
-        tools:targetApi="o" />
-
-    <item
         android:id="@+id/menu_enable_bluetooth"
-        android:icon="@drawable/ic_bluetooth"
-        android:iconTint="@color/white"
-        android:title="@string/str_menu_bluetooth_on"
-        app:showAsAction="withText"
-        tools:targetApi="o" />
+        android:title="Enable Bluetooth"
+        app:showAsAction="never" />
+    <!-- Removed 'Search Devices' menu item -->
 </menu>

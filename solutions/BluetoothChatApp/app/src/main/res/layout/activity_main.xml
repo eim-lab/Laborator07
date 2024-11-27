@@ -1,33 +1,29 @@
-<?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
     <ListView
-        android:id="@+id/list_conversation"
+        android:id="@+id/chatListView"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_marginBottom="60dp" />
+        android:layout_height="0dp"
+        android:layout_weight="1" />
 
     <EditText
-        android:id="@+id/ed_enter_message"
-        android:layout_width="0dp"
+        android:id="@+id/messageEditText"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:autofillHints=""
-        android:hint="@string/enter_message"
-        android:inputType="text"
-        android:minHeight="48dp"
-        app:layout_constraintLeft_toLeftOf="parent"
-        app:layout_constraintRight_toLeftOf="@id/btn_send_msg"
-        app:layout_constraintTop_toBottomOf="@id/list_conversation" />
+        android:hint="Type a message"/>
 
     <Button
-        android:id="@+id/btn_send_msg"
-        android:layout_width="wrap_content"
+        android:id="@+id/sendButton"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_gravity="end"
-        android:text="@string/str_label_btn_send"
-        app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/list_conversation" />
-</androidx.constraintlayout.widget.ConstraintLayout>
+        android:text="Send"/>
+
+    <Button
+        android:id="@+id/listDevicesButton"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="List Paired Devices"/>
+</LinearLayout>
