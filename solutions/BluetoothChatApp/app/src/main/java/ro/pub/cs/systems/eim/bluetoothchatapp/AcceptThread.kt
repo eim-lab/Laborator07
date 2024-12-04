@@ -1,70 +1,63 @@
-package ro.pub.cs.systems.eim.bluetoothchatapp;
+package ro.pub.cs.systems.eim.bluetoothchatapp
 
-import android.Manifest;
-import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothServerSocket;
-import android.bluetooth.BluetoothSocket;
-import android.content.pm.PackageManager;
-import android.util.Log;
+import android.Manifest
+import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothServerSocket
+import android.bluetooth.BluetoothSocket
+import android.content.pm.PackageManager
+import android.util.Log
+import androidx.core.app.ActivityCompat
+import java.io.IOException
+import java.util.UUID
 
-import androidx.core.app.ActivityCompat;
+class AcceptThread(
+        private val mainActivity: MainActivity,
+        adapter: BluetoothAdapter,
+        uuid: UUID
+) : Thread() {
 
-import java.io.IOException;
-import java.util.UUID;
+    private var serverSocket: BluetoothServerSocket? = null
 
-public class AcceptThread extends Thread {
-    private BluetoothServerSocket serverSocket;
-    private final MainActivity mainActivity;
-
-    public AcceptThread(MainActivity activity, BluetoothAdapter adapter, UUID uuid) {
-        this.mainActivity = activity;
-
-        BluetoothServerSocket tmp = null;
+    init {
         try {
-            if (ActivityCompat.checkSelfPermission(activity, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-                return;
+            if (ActivityCompat.checkSelfPermission(mainActivity, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
+                serverSocket = adapter.listenUsingRfcommWithServiceRecord("BluetoothChatApp", uuid)
             }
-            tmp = adapter.listenUsingRfcommWithServiceRecord("BluetoothChatApp", uuid);
-        } catch (IOException e) {
-            Log.d("Accept->Constructor", e.toString());
+        } catch (e: IOException) {
+            Log.d("Accept->Constructor", "Failed to initialize server socket: ${e.message}")
         }
-        serverSocket = tmp;
     }
 
-    public void run() {
+    override fun run() {
         if (serverSocket == null) {
-            Log.d("AcceptThread", "ServerSocket is null, cannot accept connections.");
-            return;
+            Log.d("AcceptThread", "ServerSocket is null, cannot accept connections.")
+            return
         }
-        BluetoothSocket socket;
+
         while (true) {
-            try {
-                socket = serverSocket.accept();
-            } catch (IOException e) {
-                break;
+            val socket: BluetoothSocket? = try {
+                serverSocket?.accept()
+            } catch (e: IOException) {
+                Log.d("Accept->Run", "Socket accept failed: ${e.message}")
+                break
             }
 
-            if (socket != null) {
-                mainActivity.manageConnectedSocket(socket);
+            socket?.let {
+                mainActivity.manageConnectedSocket(it)
                 try {
-                    serverSocket.close();
-                } catch (IOException e) {
-                    Log.d("Accept->Run", e.toString());
+                    serverSocket?.close()
+                } catch (e: IOException) {
+                    Log.d("Accept->Run", "Failed to close server socket: ${e.message}")
                 }
-                break;
             }
         }
     }
 
-    public void cancel() {
+    fun cancel() {
         try {
-            if (serverSocket == null) {
-                Log.d("AcceptThread", "ServerSocket is null, cannot close.");
-                return;
-            }
-            serverSocket.close();
-        } catch (IOException e) {
-            Log.d("Accept->Cancel", e.toString());
+            serverSocket?.close()
+        } catch (e: IOException) {
+            Log.d("Accept->Cancel", "Failed to close server socket: ${e.message}")
         }
     }
 }

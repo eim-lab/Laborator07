@@ -1,86 +1,89 @@
-package ro.pub.cs.systems.eim.bluetoothchatapp;
+package ro.pub.cs.systems.eim.bluetoothchatapp
 
-import android.bluetooth.BluetoothSocket;
-import android.Manifest;
-import android.content.pm.PackageManager;
-import android.util.Log;
-import android.widget.Toast;
+import android.Manifest
+import android.bluetooth.BluetoothSocket
+import android.content.pm.PackageManager
+import android.util.Log
+import android.widget.Toast
+import androidx.core.app.ActivityCompat
+import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
 
-import androidx.core.app.ActivityCompat;
+class ConnectedThread(
+        private val mainActivity: MainActivity,
+        private val socket: BluetoothSocket
+) : Thread() {
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+    private val inputStream: InputStream?
+    private val outputStream: OutputStream?
 
-public class ConnectedThread extends Thread {
-    private final BluetoothSocket socket;
-    private final InputStream inputStream;
-    private final OutputStream outputStream;
-    private final MainActivity mainActivity;
-
-    public ConnectedThread(MainActivity activity, BluetoothSocket socket) {
-        this.mainActivity = activity;
-        this.socket = socket;
-        InputStream tmpIn = null;
-        OutputStream tmpOut = null;
+            init {
+        var tmpIn: InputStream? = null
+        var tmpOut: OutputStream? = null
 
         try {
-            tmpIn = socket.getInputStream();
-        } catch (IOException e) {
-            Log.d("Connected->Constructor", e.toString());
+            tmpIn = socket.inputStream
+        } catch (e: IOException) {
+            Log.d("Connected->Constructor", "Failed to get input stream: ${e.message}")
         }
 
         try {
-            tmpOut = socket.getOutputStream();
-        } catch (IOException e) {
-            Log.d("Connected->Constructor", e.toString());
+            tmpOut = socket.outputStream
+        } catch (e: IOException) {
+            Log.d("Connected->Constructor", "Failed to get output stream: ${e.message}")
         }
 
-        inputStream = tmpIn;
-        outputStream = tmpOut;
+        inputStream = tmpIn
+        outputStream = tmpOut
     }
 
-    public void run() {
-        byte[] buffer = new byte[1024];
-        int bytes;
+    override fun run() {
+        val buffer = ByteArray(1024)
+        var bytes: Int
 
         if (ActivityCompat.checkSelfPermission(mainActivity, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-            return;
+            return
         }
-        String remoteDeviceName = socket.getRemoteDevice().getName();
 
-        mainActivity.runOnUiThread(() -> Toast.makeText(mainActivity, "Connected to " + remoteDeviceName, Toast.LENGTH_SHORT).show());
+        val remoteDeviceName = socket.remoteDevice.name
+
+        mainActivity.runOnUiThread {
+            Toast.makeText(mainActivity, "Connected to $remoteDeviceName", Toast.LENGTH_SHORT).show()
+        }
 
         while (true) {
             try {
-                bytes = inputStream.read(buffer);
-                String incomingMessage = new String(buffer, 0, bytes);
-                mainActivity.runOnUiThread(() -> mainActivity.addChatMessage(remoteDeviceName + ": " + incomingMessage));
-            } catch (IOException e) {
-                mainActivity.runOnUiThread(() -> Toast.makeText(mainActivity, "Connection lost.", Toast.LENGTH_SHORT).show());
-                break;
+                bytes = inputStream?.read(buffer) ?: break
+                        val incomingMessage = String(buffer, 0, bytes)
+                mainActivity.runOnUiThread {
+                    mainActivity.addChatMessage("$remoteDeviceName: $incomingMessage")
+                }
+            } catch (e: IOException) {
+                mainActivity.runOnUiThread {
+                    Toast.makeText(mainActivity, "Connection lost.", Toast.LENGTH_SHORT).show()
+                }
+                break
             }
         }
     }
 
-    public void write(byte[] bytes) {
+    fun write(bytes: ByteArray) {
         try {
-            outputStream.write(bytes);
-        } catch (IOException e) {
-            mainActivity.runOnUiThread(() -> Toast.makeText(mainActivity, "Failed to send message.", Toast.LENGTH_SHORT).show());
-            Log.d("Connected->Write", e.toString());
+            outputStream?.write(bytes)
+        } catch (e: IOException) {
+            mainActivity.runOnUiThread {
+                Toast.makeText(mainActivity, "Failed to send message.", Toast.LENGTH_SHORT).show()
+            }
+            Log.d("Connected->Write", "Failed to write to output stream: ${e.message}")
         }
     }
 
-    public void cancel() {
+    fun cancel() {
         try {
-            if (socket == null) {
-                Log.d("ConnectedThread", "Socket is null, cannot close.");
-                return;
-            }
-            socket.close();
-        } catch (IOException e) {
-            Log.d("Connected->Cancel", e.toString());
+            socket.close()
+        } catch (e: IOException) {
+            Log.d("Connected->Cancel", "Failed to close socket: ${e.message}")
         }
     }
 }
