@@ -13,4 +13,7 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "BluetoothChatApp"
-include ':app'
+include ':app-skel-java'
+include ':app-solution-java'
+include ':app-skel-kotlin'
+include ':app-solution-kotlin'
