@@ -33,6 +33,8 @@ public class MainActivity extends AppCompatActivity {
     private BluetoothDevice selectedDevice;
 
     private EditText messageEditText;
+    private Button sendButton;
+    private Button listDevicesButton;
 
     private AcceptThread acceptThread;
     private ConnectThread connectThread;
@@ -48,51 +50,54 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // TODO 1: Initialize UI components
-        // - Find views by ID: chatListView, messageEditText, sendButton, listDevicesButton
-        // - Initialize chatMessages list and chatArrayAdapter
-        // - Set adapter to chatListView
+        // TODO 1: Initialize views
+        initViews();
 
-        // TODO 2: Initialize Bluetooth adapter
-        // - Get default Bluetooth adapter
-        // - Check if Bluetooth is supported (if null, show toast and finish)
+        // TODO 2: Initialize Bluetooth
+        initBluetooth();
 
-        // TODO 3: Request necessary permissions
-        // - Call requestPermissions() method
+        // TODO 3: Request permissions
+        checkPermissions();
 
-        // TODO 4: Start server socket to listen for incoming connections
-        // - Create and start AcceptThread
+        // TODO 6: Start server socket for incoming connections
+        startServer();
 
-        // TODO 5: Set up button listeners
-        // - listDevicesButton should call listPairedDevices()
-        // - sendButton should get message from EditText, send it via connectedThread,
-        //   clear EditText, and add message to chat
+        // TODO 7: Send message using ConnectedThread
+        sendMessage();
     }
 
+    // TODO 1: Implement the method that initializes the views
+    private void initViews() {
+    }
+
+    // TODO 2: Implement the method that initializes Bluetooth
+    private void initBluetooth() {
+
+    }
+
+    // TODO 3: Implement the method that checks permissions
+    private void checkPermissions() {
+
+    }
+
+    // TODO 5: Implement the method that displays a dialog for selecting a paired device
+    private void listPairedDevices() {
+
+    }
+
+    // TODO 6: Implement server socket to listen for incoming connections
+    private void startServer() {
+    }
+
+    // TODO 7: Implement the method that sends a message to the connected device
+    private void sendMessage() {
+
+    }
+
+    // Update the UI with a new message
     public void addChatMessage(String message) {
         chatMessages.add(message);
         chatArrayAdapter.notifyDataSetChanged();
-    }
-
-    private void requestPermissions() {
-        List<String> permissions = new ArrayList<>();
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            permissions.add(Manifest.permission.BLUETOOTH_CONNECT);
-            permissions.add(Manifest.permission.BLUETOOTH_SCAN);
-        } else {
-            permissions.add(Manifest.permission.ACCESS_FINE_LOCATION);
-        }
-
-        ActivityCompat.requestPermissions(this, permissions.toArray(new String[0]), REQUEST_PERMISSIONS);
-    }
-
-    // TODO 6: Implement the method that displays a dialog for selecting a paired device
-    private void listPairedDevices() {
-        // - Check BLUETOOTH_CONNECT permission
-        // - Get bonded devices from bluetoothAdapter
-        // - Create lists for device names and device objects
-        // - Build AlertDialog with device list
-        // - On item click: save selectedDevice and start ConnectThread
     }
 
     public void manageConnectedSocket(BluetoothSocket socket) {
@@ -103,28 +108,23 @@ public class MainActivity extends AppCompatActivity {
         connectedThread.start();
     }
 
-    // TODO 7: Handle runtime permission results
+    // TODO 4: Handle permission results and activate Bluetooth programmatically
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        // - Check if requestCode matches REQUEST_PERMISSIONS
-        // - Verify all permissions were granted
-        // - If not granted, show toast and finish
-        // - If Bluetooth is not enabled, request to enable it via Intent
+
     }
 
-    // TODO 8: Handle Bluetooth enable result
+    // TODO 4: Handle Bluetooth enable result
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-        // - Check if requestCode is REQUEST_ENABLE_BT
-        // - If result is not OK, show toast and finish
         super.onActivityResult(requestCode, resultCode, data);
     }
 
-    // TODO 9: Clean up threads on activity destroy
+    // TODO 8: Clean up threads on activity destroy
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        // - Cancel acceptThread, connectThread, and connectedThread if they exist
+
     }
 }
