@@ -55,6 +55,9 @@ class MainActivity : AppCompatActivity() {
 
         // TODO 6: Start server socket for incoming connections
         startServer()
+
+        // TODO 7: Send message using ConnectedThread
+        sendMessage()
     }
 
     // TODO 1: Implement the method that initializes the views
