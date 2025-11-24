@@ -22,7 +22,7 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var bluetoothAdapter: BluetoothAdapter
     private lateinit var chatArrayAdapter: ArrayAdapter<String>
-    private val chatMessages = mutableListOf<String>()
+    private var chatMessages = mutableListOf<String>()
 
     private var selectedDevice: BluetoothDevice? = null
 
