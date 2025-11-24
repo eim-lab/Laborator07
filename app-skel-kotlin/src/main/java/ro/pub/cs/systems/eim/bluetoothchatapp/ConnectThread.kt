@@ -14,7 +14,7 @@ import java.util.UUID
 class ConnectThread(
         private val mainActivity: MainActivity,
         private val bluetoothAdapter: BluetoothAdapter,
-        device: BluetoothDevice,
+        device: BluetoothDevice?,
         uuid: UUID
 ) : Thread() {
 
@@ -23,7 +23,7 @@ class ConnectThread(
     init {
         try {
             if (ActivityCompat.checkSelfPermission(mainActivity, Manifest.permission.BLUETOOTH_CONNECT) == PackageManager.PERMISSION_GRANTED) {
-                socket = device.createRfcommSocketToServiceRecord(uuid)
+                socket = device?.createRfcommSocketToServiceRecord(uuid)
             }
         } catch (e: IOException) {
             Log.d("Connect->Constructor", e.toString())
