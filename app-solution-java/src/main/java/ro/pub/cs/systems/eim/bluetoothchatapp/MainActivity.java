@@ -6,8 +6,10 @@ import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothSocket;
 import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.graphics.Color;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
@@ -53,6 +55,7 @@ public class MainActivity extends AppCompatActivity {
         messageEditText = findViewById(R.id.messageEditText);
         Button sendButton = findViewById(R.id.sendButton);
         Button listDevicesButton = findViewById(R.id.listDevicesButton);
+        Button startServerButton = findViewById(R.id.startServerButton); // Initialize the new button
 
         // Initialize chat messages list
         chatMessages = new ArrayList<>();
@@ -72,11 +75,24 @@ public class MainActivity extends AppCompatActivity {
         // Request necessary permissions
         requestPermissions();
 
-        // Start server socket to listen for incoming connections
-        acceptThread = new AcceptThread(this, bluetoothAdapter, MY_UUID);
-        acceptThread.start();
-
         // Set up button listeners
+        startServerButton.setOnClickListener(v -> {
+            if (acceptThread == null) {
+                acceptThread = new AcceptThread(this, bluetoothAdapter, MY_UUID);
+                acceptThread.start();
+                Toast.makeText(this, "Server started. Listening for connections.", Toast.LENGTH_SHORT).show();
+                startServerButton.setBackgroundColor(Color.parseColor("#FF0000"));
+                startServerButton.setText("Stop Server");
+            } else {
+                acceptThread.cancel();
+                acceptThread = null;
+                Toast.makeText(this, "Server stopped.", Toast.LENGTH_SHORT).show();
+                Log.d("MainActivity", "Server stopped.");
+                startServerButton.setBackgroundColor(Color.parseColor("#00FF00"));
+                startServerButton.setText("Start Server");
+            }
+        });
+
         listDevicesButton.setOnClickListener(v -> listPairedDevices());
 
         sendButton.setOnClickListener(v -> {
@@ -99,6 +115,8 @@ public class MainActivity extends AppCompatActivity {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             permissions.add(Manifest.permission.BLUETOOTH_CONNECT);
             permissions.add(Manifest.permission.BLUETOOTH_SCAN);
+            permissions.add(Manifest.permission.BLUETOOTH_ADVERTISE); // Needed for discoverability
+            permissions.add(Manifest.permission.BLUETOOTH_ADMIN); // For older APIs
         } else {
             permissions.add(Manifest.permission.ACCESS_FINE_LOCATION);
         }
@@ -108,6 +126,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void listPairedDevices() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+            Toast.makeText(this, "Bluetooth Connect permission not granted.", Toast.LENGTH_SHORT).show();
             return;
         }
         Set<BluetoothDevice> pairedDevices = bluetoothAdapter.getBondedDevices();
@@ -141,6 +160,12 @@ public class MainActivity extends AppCompatActivity {
         }
         connectedThread = new ConnectedThread(this, socket);
         connectedThread.start();
+
+        // Stop the AcceptThread once a connection is established to save resources
+        if (acceptThread != null) {
+            acceptThread.cancel();
+            acceptThread = null;
+        }
     }
 
     // Handle runtime permission results
@@ -175,11 +200,11 @@ public class MainActivity extends AppCompatActivity {
     // Handle Bluetooth enable result
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
         if (requestCode == REQUEST_ENABLE_BT && resultCode != RESULT_OK) {
             Toast.makeText(this, "Bluetooth must be enabled to continue.", Toast.LENGTH_LONG).show();
             finish();
         }
-        super.onActivityResult(requestCode, resultCode, data);
     }
 
     // Clean up threads on activity destroy
