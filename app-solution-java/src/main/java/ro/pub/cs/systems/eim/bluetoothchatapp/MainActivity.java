@@ -97,10 +97,15 @@ public class MainActivity extends AppCompatActivity {
 
         sendButton.setOnClickListener(v -> {
             String message = messageEditText.getText().toString();
-            if (!message.isEmpty() && connectedThread != null) {
-                connectedThread.write(message.getBytes());
-                messageEditText.setText("");
-                addChatMessage("Me: " + message);
+            if (!message.isEmpty()) {
+                if (connectedThread != null) {
+                    connectedThread.write(message.getBytes());
+                    messageEditText.setText("");
+                    addChatMessage("Me: " + message);
+                } else {
+                    Toast.makeText(this, "No connected device.", Toast.LENGTH_SHORT).show();
+                    Log.e("MainActivity", "No connected device.");
+                }
             }
         });
     }

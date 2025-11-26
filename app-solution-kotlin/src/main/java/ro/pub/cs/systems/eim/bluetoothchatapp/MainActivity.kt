@@ -6,8 +6,10 @@ import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothSocket
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
@@ -45,31 +47,62 @@ class MainActivity : AppCompatActivity() {
         messageEditText = findViewById(R.id.messageEditText)
         val sendButton: Button = findViewById(R.id.sendButton)
         val listDevicesButton: Button = findViewById(R.id.listDevicesButton)
+        val startServerButton: Button = findViewById(R.id.startServerButton) // Initialize the new button
 
         chatArrayAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, chatMessages)
         chatListView.adapter = chatArrayAdapter
 
         bluetoothAdapter = BluetoothAdapter.getDefaultAdapter()
 
+        // Check if Bluetooth is supported
+        if (bluetoothAdapter == null) {
+            Toast.makeText(this, "Bluetooth is not available.", Toast.LENGTH_LONG).show()
+            finish()
+            return
+        }
+
         requestPermissions()
 
-        acceptThread = AcceptThread(this, bluetoothAdapter, MY_UUID).apply { start() }
-
         listDevicesButton.setOnClickListener { listPairedDevices() }
+        // Set up button listeners
+        startServerButton.setOnClickListener {
+            if (acceptThread == null) {
+                acceptThread = AcceptThread(this, bluetoothAdapter, MY_UUID)
+                acceptThread?.start()
+                Toast.makeText(this, "Server started. Listening for connections.", Toast.LENGTH_SHORT).show()
+                startServerButton.setBackgroundColor(Color.parseColor("#FF0000"))
+                startServerButton.text = "Stop Server"
+            } else {
+                acceptThread?.cancel()
+                acceptThread = null
+                Toast.makeText(this, "Server stopped.", Toast.LENGTH_SHORT).show()
+                Log.d("MainActivity", "Server stopped.")
+                startServerButton.setBackgroundColor(Color.parseColor("#00FF00"))
+                startServerButton.text = "Start Server"
+            }
+        }
 
         sendButton.setOnClickListener {
             val message = messageEditText.text.toString()
-            if (message.isNotEmpty() && connectedThread != null) {
-                connectedThread?.write(message.toByteArray())
-                messageEditText.text.clear()
-                addChatMessage("Me: $message")
+            if (message.isNotEmpty()) {
+                if (connectedThread != null) {
+                    connectedThread?.write(message.toByteArray())
+                    messageEditText.text.clear()
+                    addChatMessage("Me: $message")
+                } else {
+                    Toast.makeText(this, "No connected device.", Toast.LENGTH_SHORT).show()
+                    Log.e("MainActivity", "No connected device.")
+                }
             }
         }
     }
 
     fun addChatMessage(message: String) {
-        chatMessages.add(message)
-        chatArrayAdapter.notifyDataSetChanged()
+        // Post updates to the UI thread
+        runOnUiThread {
+            chatMessages.add(message)
+            chatArrayAdapter.notifyDataSetChanged()
+        }
     }
 
     private fun requestPermissions() {
@@ -77,6 +110,8 @@ class MainActivity : AppCompatActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             permissions.add(Manifest.permission.BLUETOOTH_CONNECT)
             permissions.add(Manifest.permission.BLUETOOTH_SCAN)
+            permissions.add(Manifest.permission.BLUETOOTH_ADVERTISE)
+            permissions.add(Manifest.permission.BLUETOOTH_ADMIN)
         } else {
             permissions.add(Manifest.permission.ACCESS_FINE_LOCATION)
         }
@@ -86,6 +121,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun listPairedDevices() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+            // Request permission or show a toast
+            Toast.makeText(this, "Bluetooth Connect permission not granted.", Toast.LENGTH_SHORT).show()
             return
         }
         val pairedDevices = bluetoothAdapter.bondedDevices
@@ -103,7 +140,7 @@ class MainActivity : AppCompatActivity() {
             setTitle("Select Device")
             val deviceArrayAdapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_list_item_1, deviceList)
             setAdapter(deviceArrayAdapter) { _, which ->
-                    selectedDevice = devices[which]
+                selectedDevice = devices[which]
                 connectThread = ConnectThread(this@MainActivity, bluetoothAdapter, selectedDevice!!, MY_UUID).apply { start() }
             }
             show()
@@ -113,22 +150,43 @@ class MainActivity : AppCompatActivity() {
     fun manageConnectedSocket(socket: BluetoothSocket) {
         connectedThread?.cancel()
         connectedThread = ConnectedThread(this, socket).apply { start() }
+
+        // Stop the AcceptThread once a connection is established
+        if (acceptThread != null) {
+            acceptThread?.cancel()
+            acceptThread = null
+            // Update button on UI thread
+            runOnUiThread {
+                val startServerButton: Button = findViewById(R.id.startServerButton)
+                startServerButton.text = "Start Server"
+                startServerButton.setBackgroundColor(Color.parseColor("#00FF00"))
+            }
+        }
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == REQUEST_PERMISSIONS) {
-            if (grantResults.any { it != PackageManager.PERMISSION_GRANTED }) {
-                Toast.makeText(this, "Permissions required for Bluetooth operation.", Toast.LENGTH_LONG).show()
-                finish()
+            var allPermissionsGranted = true
+            for (result in grantResults) {
+                if (result != PackageManager.PERMISSION_GRANTED) {
+                    allPermissionsGranted = false
+                    break
+                }
             }
 
-            if (!bluetoothAdapter.isEnabled) {
-                val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
-                    return
+            if (!allPermissionsGranted) {
+                Toast.makeText(this, "Permissions are required for Bluetooth functionality.", Toast.LENGTH_LONG).show()
+                finish()
+            } else {
+                // Ensure Bluetooth is enabled after permissions are granted
+                if (!bluetoothAdapter.isEnabled) {
+                    val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
+                    if (ActivityCompat.checkSelfPermission(this, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED) {
+                        return
+                    }
+                    startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT)
                 }
-                startActivityForResult(enableBtIntent, REQUEST_ENABLE_BT)
             }
         }
     }
